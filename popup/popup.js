@@ -144,8 +144,8 @@ function renderSidebar() {
       ${tree.length > 0 ? renderFolderTree(tree, 0) : '<div style="padding: 8px 10px; font-size: 11px; color: var(--text-tertiary);">No folders yet</div>'}
     </div>
     <div class="sidebar-add-folder">
-      <button class="add-folder-btn" data-action="add-root-folder">
-        ${Icons.plus} New Folder
+      <button class="add-folder-btn" data-action="add-folder">
+        ${Icons.plus} New Sub Folder
       </button>
     </div>
   `;
@@ -343,7 +343,7 @@ function renderEmptyState() {
       <div class="empty-state-icon">${Icons.lock}</div>
       <div class="empty-state-title">Welcome to SF Vault+</div>
       <div class="empty-state-text">Create a folder and add your first credential to get started</div>
-      <button class="empty-state-btn" data-action="add-root-folder">${Icons.plus} Create Folder</button>
+      <button class="empty-state-btn" data-action="add-folder">${Icons.plus} Create Folder</button>
     </div>`;
   }
   return `<div class="empty-state">
@@ -607,27 +607,61 @@ function buildFolderOptions(tree, level) {
   }).join('');
 }
 
-/** Show Add Folder modal */
-function showAddFolderModal(parentId = null) {
-  const parentName = parentId ? (state.folders.find(f => f.id === parentId)?.name || 'folder') : null;
-
+/** Show simple Add Root Folder modal (no parent picker) */
+function showAddRootFolderModal() {
   showModal(`
     <div class="modal-header">
-      <span class="modal-title">${parentId ? 'New Subfolder' : 'New Folder'}</span>
+      <span class="modal-title">New Folder</span>
       <button class="modal-close" data-action="close-modal">${Icons.x}</button>
     </div>
     <div class="modal-body">
-      ${parentId ? `<div style="font-size:12px;color:var(--text-tertiary);margin-bottom:4px;">Inside: ${escapeHtml(parentName)}</div>` : ''}
       <div class="form-group">
-        <label class="form-label">Folder Name</label>
-        <input class="form-input" id="folder-name" placeholder="e.g. Client A" autofocus>
+        <label class="form-label">Folder Name *</label>
+        <input class="form-input" id="folder-name" placeholder="e.g. Salesforce" autofocus>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" data-action="close-modal">Cancel</button>
-      <button class="btn btn-primary" data-action="save-folder" data-parent-id="${parentId || ''}">Create</button>
+      <button class="btn btn-primary" data-action="save-root-folder">Create</button>
     </div>
   `);
+
+  setTimeout(() => document.getElementById('folder-name')?.focus(), 100);
+}
+
+/** Show Add Sub Folder modal (with parent dropdown) */
+function showAddFolderModal(initialParentId = null) {
+  const tree = FolderService.buildTree(state.folders);
+  const folderOptions = buildFolderOptions(tree, 0);
+
+  showModal(`
+    <div class="modal-header">
+      <span class="modal-title">New Sub Folder</span>
+      <button class="modal-close" data-action="close-modal">${Icons.x}</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Folder Name *</label>
+        <input class="form-input" id="folder-name" placeholder="e.g. Client A" autofocus>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Parent Folder</label>
+        <select class="form-select" id="folder-parent">
+          <option value="">— Root (No Parent) —</option>
+          ${folderOptions}
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-action="close-modal">Cancel</button>
+      <button class="btn btn-primary" data-action="save-folder">Create</button>
+    </div>
+  `);
+
+  if (initialParentId) {
+    const parentSelect = document.getElementById('folder-parent');
+    if (parentSelect) parentSelect.value = initialParentId;
+  }
 
   setTimeout(() => document.getElementById('folder-name')?.focus(), 100);
 }
@@ -991,14 +1025,29 @@ async function handleClick(e) {
       break;
 
     // Folders
-    case 'add-root-folder':
-      showAddFolderModal(null);
+    case 'add-folder':
+      showAddFolderModal(state.currentFolderId);
       break;
+
+    case 'add-root-folder':
+      showAddRootFolderModal();
+      break;
+
+    case 'save-root-folder': {
+      const name = document.getElementById('folder-name')?.value?.trim();
+      if (!name) { showToast('Folder name is required', 'error'); break; }
+      await FolderService.createFolder(name, null);
+      await loadData();
+      hideModal();
+      renderSidebar();
+      showToast('Folder created');
+      break;
+    }
 
     case 'save-folder': {
       const name = document.getElementById('folder-name')?.value?.trim();
       if (!name) { showToast('Folder name is required', 'error'); break; }
-      const parentId = target.dataset.parentId || null;
+      const parentId = document.getElementById('folder-parent')?.value || null;
       await FolderService.createFolder(name, parentId);
       await loadData();
       hideModal();
