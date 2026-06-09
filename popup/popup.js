@@ -22,8 +22,9 @@ const state = {
   showingFavorites: false,
   showingAll: true,
   searchQuery: '',
-  theme: 'dark',
+  theme: 'light',
   expandedFolders: new Set(),
+  expandedCredentialIds: new Set(),
   editingCredentialId: null
 };
 
@@ -54,7 +55,7 @@ async function loadData() {
 async function loadPreferences() {
   const prefs = await StorageService.get(PREFS_KEY);
   if (prefs) {
-    state.theme = prefs.theme || 'dark';
+    state.theme = prefs.theme || 'light';
     state.expandedFolders = new Set(prefs.expandedFolders || []);
     state.currentFolderId = prefs.currentFolderId || null;
     state.showingAll = prefs.showingAll !== false;
@@ -244,7 +245,7 @@ function renderCredentialCard(cred, showBreadcrumb = false) {
   const label = ORG_TYPE_LABELS[cred.orgType] || 'OTHER';
   const badgeClass = cred.orgType.toLowerCase().replace(/\s+/g, '-');
   const isFav = cred.isFavorite;
-  const isSF = isSalesforceUrl(cred.loginUrl);
+  const isExpanded = state.expandedCredentialIds.has(cred.id);
 
   let breadcrumbHtml = '';
   if (showBreadcrumb && cred.folderId) {
@@ -254,39 +255,69 @@ function renderCredentialCard(cred, showBreadcrumb = false) {
     }
   }
 
+  if (!isExpanded) {
+    // Compact mode
+    return `
+      <div class="credential-card compact" style="border-left-color: ${color};" data-credential-id="${cred.id}" data-action="toggle-card-expand" data-id="${cred.id}">
+        ${breadcrumbHtml}
+        <div class="card-compact-row">
+          <span class="card-title" title="${escapeHtml(cred.title)}">${escapeHtml(cred.title)}</span>
+          <div class="card-actions compact" onclick="event.stopPropagation()">
+            <button class="card-fav-btn ${isFav ? 'active' : ''}"
+                    data-action="toggle-fav" data-id="${cred.id}" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">
+              ${isFav ? Icons.starFilled : Icons.star}
+            </button>
+            <button class="card-action-icon-btn" data-action="show-copy-menu" data-id="${cred.id}" title="Copy Actions">
+              ${Icons.copy}
+            </button>
+            <button class="card-action-icon-btn" data-action="show-login-menu" data-id="${cred.id}" title="Login Actions">
+              ${Icons.externalLink}
+            </button>
+            <button class="card-more-btn" data-action="show-card-menu" data-id="${cred.id}" title="More actions">
+              ${Icons.moreVertical}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Expanded mode
   return `
-    <div class="credential-card" style="border-left-color: ${color};" data-credential-id="${cred.id}">
+    <div class="credential-card expanded" style="border-left-color: ${color};" data-credential-id="${cred.id}">
       ${breadcrumbHtml}
-      <div class="card-header">
+      <div class="card-header" data-action="toggle-card-expand" data-id="${cred.id}" style="cursor: pointer;">
         <div class="card-title-row">
           <span class="card-title" title="${escapeHtml(cred.title)}">${escapeHtml(cred.title)}</span>
         </div>
         <button class="card-fav-btn ${isFav ? 'active' : ''}"
-                data-action="toggle-fav" data-id="${cred.id}" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">
+                data-action="toggle-fav" data-id="${cred.id}" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}" onclick="event.stopPropagation()">
           ${isFav ? Icons.starFilled : Icons.star}
         </button>
       </div>
-      <div class="card-username" title="${escapeHtml(cred.username)}">${escapeHtml(cred.username)}</div>
-      <div class="card-meta">
-        <span class="org-badge ${badgeClass}">${label}</span>
-        ${cred.alias ? `<span style="font-size:10px;color:var(--text-tertiary);">${escapeHtml(cred.alias)}</span>` : ''}
-      </div>
-      ${cred.tags && cred.tags.length > 0 ? `
-        <div class="card-tags">
-          ${cred.tags.slice(0, 4).map(t => `<span class="card-tag">${escapeHtml(t)}</span>`).join('')}
-          ${cred.tags.length > 4 ? `<span class="card-tag">+${cred.tags.length - 4}</span>` : ''}
+      <div class="card-body-expanded">
+        <div class="card-username" title="${escapeHtml(cred.username)}">${escapeHtml(cred.username)}</div>
+        <div class="card-meta">
+          <span class="org-badge ${badgeClass}">${label}</span>
+          ${cred.alias ? `<span style="font-size:10px;color:var(--text-tertiary);">${escapeHtml(cred.alias)}</span>` : ''}
         </div>
-      ` : ''}
-      <div class="card-actions">
-        <button class="card-action-btn" data-action="show-copy-menu" data-id="${cred.id}">
-          ${Icons.copy} Copy <span class="caret">▾</span>
-        </button>
-        <button class="card-action-btn" data-action="show-login-menu" data-id="${cred.id}">
-          ${Icons.externalLink} Login <span class="caret">▾</span>
-        </button>
-        <button class="card-more-btn" data-action="show-card-menu" data-id="${cred.id}" title="More actions">
-          ${Icons.moreVertical}
-        </button>
+        ${cred.tags && cred.tags.length > 0 ? `
+          <div class="card-tags">
+            ${cred.tags.map(t => `<span class="card-tag">${escapeHtml(t)}</span>`).join('')}
+          </div>
+        ` : ''}
+        ${cred.notes ? `<div class="card-notes-preview" style="font-size:11px;color:var(--text-secondary);background:var(--bg-tertiary);padding:6px;border-radius:4px;margin-bottom:8px;white-space:pre-wrap;word-break:break-all;">${escapeHtml(cred.notes)}</div>` : ''}
+        <div class="card-actions">
+          <button class="card-action-btn" data-action="show-copy-menu" data-id="${cred.id}">
+            ${Icons.copy} Copy <span class="caret">▾</span>
+          </button>
+          <button class="card-action-btn" data-action="show-login-menu" data-id="${cred.id}">
+            ${Icons.externalLink} Login <span class="caret">▾</span>
+          </button>
+          <button class="card-more-btn" data-action="show-card-menu" data-id="${cred.id}" title="More actions">
+            ${Icons.moreVertical}
+          </button>
+        </div>
       </div>
     </div>
   `;
@@ -341,9 +372,67 @@ function renderActionBar() {
 // ═══════════════════════════════════════════════════════
 // RENDER: SETTINGS
 // ═══════════════════════════════════════════════════════
-function renderSettings() {
+// Helper to get storage size in KB
+async function getStorageSize() {
+  try {
+    const data = await StorageService.getAll();
+    const str = JSON.stringify(data);
+    return str.length / 1024;
+  } catch {
+    return 0;
+  }
+}
+
+const sampleJson = {
+  version: "1.0.0",
+  exportDate: new Date().toISOString(),
+  folders: [
+    {
+      id: "folder-uuid-1",
+      name: "Salesforce Client A",
+      parentId: null,
+      color: null,
+      order: 0,
+      createdDate: new Date().toISOString(),
+      updatedDate: new Date().toISOString()
+    },
+    {
+      id: "folder-uuid-2",
+      name: "Sandbox Orgs",
+      parentId: "folder-uuid-1",
+      color: null,
+      order: 0,
+      createdDate: new Date().toISOString(),
+      updatedDate: new Date().toISOString()
+    }
+  ],
+  credentials: [
+    {
+      id: "cred-uuid-1",
+      folderId: "folder-uuid-2",
+      title: "UAT Org",
+      username: "admin@client-a.uat",
+      password: "password123",
+      token: "SECURITY_TOKEN_HERE",
+      loginUrl: "https://test.salesforce.com",
+      alias: "client-a-uat",
+      orgId: "00Dxx000000xxxx",
+      notes: "Important notes go here.",
+      tags: ["uat", "client-a"],
+      color: null,
+      isFavorite: true,
+      orgType: "Sandbox",
+      createdDate: new Date().toISOString(),
+      updatedDate: new Date().toISOString()
+    }
+  ]
+};
+
+async function renderSettings() {
   const el = document.getElementById('settings-view');
-  const isDark = state.theme === 'dark';
+  const usedKb = await getStorageSize();
+  const limitKb = 10240;
+  const progressPercent = Math.min(100, (usedKb / limitKb) * 100);
 
   el.innerHTML = `
     <div class="settings-header">
@@ -352,22 +441,8 @@ function renderSettings() {
     </div>
     <div class="settings-body">
       <div class="settings-card">
-        <div class="settings-card-title">Appearance</div>
-        <div class="settings-card-desc">Customize how SF Vault+ looks</div>
-        <div class="settings-row">
-          <div>
-            <div class="settings-row-label">Dark Mode</div>
-            <div class="settings-row-desc">Use dark color scheme</div>
-          </div>
-          <button class="theme-switch ${isDark ? 'active' : ''}" data-action="toggle-theme-setting">
-            <div class="theme-switch-thumb"></div>
-          </button>
-        </div>
-      </div>
-
-      <div class="settings-card">
         <div class="settings-card-title">Backup & Restore</div>
-        <div class="settings-card-desc">Export or import your vault data</div>
+        <div class="settings-card-desc">Export, import, or get a template file</div>
         <div class="settings-btn-row">
           <button class="btn btn-secondary" data-action="export-vault">
             ${Icons.download} Export
@@ -375,6 +450,24 @@ function renderSettings() {
           <button class="btn btn-secondary" data-action="import-vault">
             ${Icons.upload} Import
           </button>
+          <button class="btn btn-secondary" data-action="download-sample" title="Download sample JSON template" style="padding: 4px 6px; font-size: 11px;">
+            ${Icons.download} Sample JSON
+          </button>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-card-title">Storage Usage</div>
+        <div class="settings-card-desc">Local chrome storage details</div>
+        <div class="storage-usage-container">
+          <div class="storage-progress-bar">
+            <div class="storage-progress-fill" style="width: ${progressPercent}%;"></div>
+          </div>
+          <div class="storage-usage-text">
+            <span>${usedKb.toFixed(2)} KB used</span>
+            <span class="storage-usage-separator">--------</span>
+            <span>${limitKb} KB limit</span>
+          </div>
         </div>
       </div>
 
@@ -387,7 +480,7 @@ function renderSettings() {
       </div>
 
       <div class="settings-version">
-        SF Vault+ v1.0.0 · Offline-first credential manager
+        SF Vault+ v1.0.1 · Offline-first credential manager
       </div>
     </div>
   `;
@@ -866,17 +959,27 @@ async function handleClick(e) {
       state.theme = state.theme === 'dark' ? 'light' : 'dark';
       applyTheme();
       await savePreferences();
-      renderSettings();
+      await renderSettings();
       break;
 
     // Settings
     case 'open-settings':
-      renderSettings();
+      await renderSettings();
       break;
 
     case 'close-settings':
       closeSettings();
       break;
+
+    case 'download-sample': {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(sampleJson, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", "sf-vault-sample.json");
+      downloadAnchor.click();
+      showToast('Sample JSON downloaded', 'info');
+      break;
+    }
 
     // Search
     case 'clear-search':
@@ -970,6 +1073,15 @@ async function handleClick(e) {
       showToast('Credential deleted');
       break;
 
+    case 'toggle-card-expand':
+      if (state.expandedCredentialIds.has(id)) {
+        state.expandedCredentialIds.delete(id);
+      } else {
+        state.expandedCredentialIds.add(id);
+      }
+      renderContent();
+      break;
+
     // Favorites
     case 'toggle-fav': {
       const btn = target;
@@ -1027,9 +1139,9 @@ async function handleClick(e) {
       if (!cred) break;
       const sf = isSalesforceUrl(cred.loginUrl);
       showDropdown(target, [
-        { label: `Open in New Tab${sf ? ' + Auto-fill' : ''}`, icon: Icons.externalLink, action: 'login-tab', id },
-        { label: `Open in New Window${sf ? ' + Auto-fill' : ''}`, icon: Icons.window, action: 'login-window', id },
-        { label: `Open in Incognito${sf ? ' + Auto-fill' : ''}`, icon: Icons.incognito, action: 'login-incognito', id }
+        { label: `Open in New Tab`, icon: Icons.externalLink, action: 'login-tab', id },
+        { label: `Open in New Window`, icon: Icons.window, action: 'login-window', id },
+        { label: `Open in Incognito`, icon: Icons.incognito, action: 'login-incognito', id }
       ]);
       break;
     }
