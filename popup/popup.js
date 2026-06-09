@@ -84,7 +84,9 @@ function renderHeader() {
   const el = document.getElementById('app-header');
   el.innerHTML = `
     <div class="header-left">
-      <div class="header-logo">${Icons.lock}</div>
+      <div class="header-logo">
+        <img src="../assets/icons/logo-32.png" alt="Logo" class="header-logo-img">
+      </div>
       <span class="header-title">SF Vault+</span>
     </div>
     <div class="header-actions">
@@ -558,7 +560,9 @@ function showAuthorModal() {
 
       <!-- App badge -->
       <div class="author-app-badge">
-        <div class="author-app-icon">${Icons.lock}</div>
+        <div class="author-app-icon">
+          <img src="../assets/icons/logo-32.png" alt="Logo" class="header-logo-img">
+        </div>
         <div>
           <div class="author-app-name">SF Vault+</div>
           <div class="author-app-desc">Offline-first Salesforce credential manager</div>

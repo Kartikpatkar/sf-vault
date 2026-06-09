@@ -4,7 +4,19 @@
   "description": "Offline-first credential organization and productivity tool for Salesforce professionals. Securely store, organize, and manage credentials with unlimited folder hierarchy.",
   "version": "1.0.0",
   "action": {
-    "default_popup": "popup/popup.html"
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "assets/icons/logo-16.png",
+      "32": "assets/icons/logo-32.png",
+      "48": "assets/icons/logo-48.png",
+      "128": "assets/icons/logo-128.png"
+    }
+  },
+  "icons": {
+    "16": "assets/icons/logo-16.png",
+    "32": "assets/icons/logo-32.png",
+    "48": "assets/icons/logo-48.png",
+    "128": "assets/icons/logo-128.png"
   },
   "permissions": [
     "storage",
