@@ -189,11 +189,9 @@ function renderFolderTree(nodes, level) {
 function renderContent() {
   const el = document.getElementById('app-content');
   let creds = [];
-  let title = '';
   let showBreadcrumbOnCards = false;
 
   if (state.searchQuery) {
-    // Search results
     const q = state.searchQuery.toLowerCase();
     creds = state.credentials.filter(c =>
       (c.title && c.title.toLowerCase().includes(q)) ||
@@ -203,42 +201,86 @@ function renderContent() {
       (c.notes && c.notes.toLowerCase().includes(q)) ||
       (c.tags && c.tags.some(t => t.toLowerCase().includes(q)))
     );
-    title = `Search results (${creds.length})`;
     showBreadcrumbOnCards = true;
-  } else if (state.showingFavorites) {
-    creds = state.credentials.filter(c => c.isFavorite);
-    title = 'Favorites';
-    showBreadcrumbOnCards = true;
-  } else if (state.showingAll) {
-    creds = [...state.credentials];
-    title = 'All Credentials';
-    showBreadcrumbOnCards = true;
-  } else if (state.currentFolderId) {
-    creds = state.credentials.filter(c => c.folderId === state.currentFolderId);
-    const folder = state.folders.find(f => f.id === state.currentFolderId);
-    title = folder ? folder.name : 'Folder';
-  }
-
-  if (creds.length === 0) {
-    el.innerHTML = renderEmptyState();
+    if (creds.length === 0) { el.innerHTML = renderEmptyState(); return; }
+    el.innerHTML = creds.map(c => renderCredentialCard(c, showBreadcrumbOnCards)).join('');
     return;
   }
 
-  // Build breadcrumb for folder view
-  let breadcrumbHtml = '';
-  if (!state.showingAll && !state.showingFavorites && !state.searchQuery && state.currentFolderId) {
-    const path = getFolderPathSync(state.currentFolderId);
-    breadcrumbHtml = `<div class="breadcrumb">
-      ${path.map((name, i) => `${i > 0 ? '<span class="breadcrumb-separator">›</span>' : ''}
-        <span class="${i === path.length - 1 ? 'breadcrumb-current' : 'breadcrumb-item'}">${escapeHtml(name)}</span>`).join('')}
-    </div>`;
+  if (state.showingFavorites) {
+    creds = state.credentials.filter(c => c.isFavorite);
+    showBreadcrumbOnCards = true;
+    if (creds.length === 0) { el.innerHTML = renderEmptyState(); return; }
+    el.innerHTML = creds.map(c => renderCredentialCard(c, showBreadcrumbOnCards)).join('');
+    return;
   }
 
-  el.innerHTML = `
-    ${breadcrumbHtml}
-    ${creds.map(c => renderCredentialCard(c, showBreadcrumbOnCards)).join('')}
+  if (state.showingAll) {
+    creds = [...state.credentials];
+    showBreadcrumbOnCards = true;
+    if (creds.length === 0) { el.innerHTML = renderEmptyState(); return; }
+    el.innerHTML = creds.map(c => renderCredentialCard(c, showBreadcrumbOnCards)).join('');
+    return;
+  }
+
+  if (state.currentFolderId) {
+    // Build clickable breadcrumb
+    const pathIds = getFolderPathIds(state.currentFolderId);
+    const breadcrumbHtml = pathIds.length > 0 ? `<div class="breadcrumb">
+      ${pathIds.map(({ id, name }, i) => `
+        <span class="breadcrumb-separator">›</span>
+        <span class="${i === pathIds.length - 1 ? 'breadcrumb-current' : 'breadcrumb-item breadcrumb-nav'}"
+              ${i < pathIds.length - 1 ? `data-action="nav-breadcrumb" data-id="${id}" style="cursor:pointer;" title="${escapeHtml(name)}"` : ''}
+        >${escapeHtml(name)}</span>
+      `).join('')}
+    </div>` : '';
+
+    // Child subfolder cards
+    const childFolders = state.folders.filter(f => f.parentId === state.currentFolderId);
+    const subfolderCards = childFolders.length > 0
+      ? `<div class="subfolder-grid">${childFolders.map(f => renderFolderCard(f)).join('')}</div>`
+      : '';
+
+    // Credentials in this folder
+    creds = state.credentials.filter(c => c.folderId === state.currentFolderId);
+    const credCards = creds.map(c => renderCredentialCard(c, false)).join('');
+
+    if (childFolders.length === 0 && creds.length === 0) {
+      el.innerHTML = renderEmptyState();
+      return;
+    }
+
+    el.innerHTML = `${breadcrumbHtml}${subfolderCards}${credCards}`;
+    return;
+  }
+
+  el.innerHTML = renderEmptyState();
+}
+
+/** Render a subfolder card (clickable tile) */
+function renderFolderCard(folder) {
+  const credCount = state.credentials.filter(c => c.folderId === folder.id).length;
+  const childCount = state.folders.filter(f => f.parentId === folder.id).length;
+  return `
+    <div class="subfolder-card" data-action="select-folder" data-id="${folder.id}" title="${escapeHtml(folder.name)}">
+      <span class="subfolder-card-icon">${Icons.folder}</span>
+      <span class="subfolder-card-name">${escapeHtml(folder.name)}</span>
+    </div>
   `;
 }
+
+/** Get folder path as array of {id, name} objects for clickable breadcrumb */
+function getFolderPathIds(folderId) {
+  const path = [];
+  let current = state.folders.find(f => f.id === folderId);
+  while (current) {
+    path.unshift({ id: current.id, name: current.name });
+    current = current.parentId ? state.folders.find(f => f.id === current.parentId) : null;
+  }
+  return path;
+}
+
+
 
 function renderCredentialCard(cred, showBreadcrumb = false) {
   const color = ORG_TYPE_COLORS[cred.orgType] || ORG_TYPE_COLORS['Other'];
@@ -969,6 +1011,18 @@ async function handleClick(e) {
       renderContent();
       renderSearchBar();
       break;
+
+    case 'nav-breadcrumb':
+      state.currentFolderId = id;
+      state.showingAll = false;
+      state.showingFavorites = false;
+      state.searchQuery = '';
+      await savePreferences();
+      renderSidebar();
+      renderContent();
+      renderSearchBar();
+      break;
+
 
     case 'toggle-expand':
       e.stopPropagation();
