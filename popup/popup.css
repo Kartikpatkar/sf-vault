@@ -308,6 +308,25 @@ textarea {
   padding: 6px 10px 4px;
 }
 
+.sidebar-collapse-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: color 0.2s, background-color 0.2s;
+  margin-top: 2px;
+}
+
+.sidebar-collapse-btn:hover {
+  color: var(--text-secondary);
+  background-color: var(--bg-tertiary);
+}
+
 .sidebar-divider {
   height: 1px;
   background: var(--border);

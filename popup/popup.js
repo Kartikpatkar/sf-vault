@@ -141,9 +141,16 @@ function renderSidebar() {
       </div>
     </div>
     <div class="sidebar-divider"></div>
-    <div class="sidebar-section" style="flex:1; overflow-y:auto;">
-      <div class="sidebar-label">Folders</div>
-      ${tree.length > 0 ? renderFolderTree(tree, 0) : '<div style="padding: 8px 10px; font-size: 11px; color: var(--text-tertiary);">No folders yet</div>'}
+    <div class="sidebar-section" style="flex:1; overflow-y:auto; display:flex; flex-direction:column;">
+      <div class="sidebar-header-row" style="display: flex; align-items: center; justify-content: space-between; padding-right: 6px;">
+        <div class="sidebar-label" style="padding-bottom: 6px;">Folders</div>
+        <button class="sidebar-collapse-btn" data-action="collapse-all-folders" title="Collapse all folders">
+          ${Icons.minus}
+        </button>
+      </div>
+      <div style="flex:1; overflow-y:auto;">
+        ${tree.length > 0 ? renderFolderTree(tree, 0) : '<div style="padding: 8px 10px; font-size: 11px; color: var(--text-tertiary);">No folders yet</div>'}
+      </div>
     </div>
     <div class="sidebar-add-folder">
       <button class="add-folder-btn" data-action="add-folder">
@@ -306,7 +313,7 @@ function renderCredentialCard(cred, showBreadcrumb = false) {
         ${breadcrumbHtml}
         <div class="card-compact-row">
           <span class="card-title" title="${escapeHtml(cred.title)}">${escapeHtml(cred.title)}</span>
-          <div class="card-actions compact" onclick="event.stopPropagation()">
+          <div class="card-actions compact">
             <button class="card-fav-btn ${isFav ? 'active' : ''}"
                     data-action="toggle-fav" data-id="${cred.id}" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">
               ${isFav ? Icons.starFilled : Icons.star}
@@ -335,7 +342,7 @@ function renderCredentialCard(cred, showBreadcrumb = false) {
           <span class="card-title" title="${escapeHtml(cred.title)}">${escapeHtml(cred.title)}</span>
         </div>
         <button class="card-fav-btn ${isFav ? 'active' : ''}"
-                data-action="toggle-fav" data-id="${cred.id}" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}" onclick="event.stopPropagation()">
+                data-action="toggle-fav" data-id="${cred.id}" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">
           ${isFav ? Icons.starFilled : Icons.star}
         </button>
       </div>
@@ -959,17 +966,19 @@ function setupGlobalListeners() {
   // Delegated click handler for the entire app
   document.addEventListener('click', handleClick);
 
-  // Search input
-  const searchInput = document.getElementById('search-input');
-  if (searchInput) {
-    searchInput.addEventListener('input', debounce((e) => {
-      state.searchQuery = e.target.value;
-      renderContent();
-      // Show/hide clear button
-      const clearBtn = document.querySelector('.search-clear');
-      if (clearBtn) clearBtn.classList.toggle('hidden', !state.searchQuery);
-    }, 200));
-  }
+  // Delegated search input handler (handles search bar re-render correctly)
+  const debouncedSearch = debounce((val) => {
+    state.searchQuery = val;
+    renderContent();
+    const clearBtn = document.querySelector('.search-clear');
+    if (clearBtn) clearBtn.classList.toggle('hidden', !state.searchQuery);
+  }, 200);
+
+  document.addEventListener('input', (e) => {
+    if (e.target && e.target.id === 'search-input') {
+      debouncedSearch(e.target.value);
+    }
+  });
 
   // Context menu on folders (right-click)
   document.getElementById('app-sidebar').addEventListener('contextmenu', (e) => {
@@ -1009,6 +1018,24 @@ function setupGlobalListeners() {
       handleAddTag();
     }
   });
+
+  // Change listener for org type to auto-populate URL
+  document.addEventListener('change', (e) => {
+    if (e.target && e.target.id === 'cred-orgtype') {
+      const orgType = e.target.value;
+      const urlInput = document.getElementById('cred-url');
+      if (urlInput) {
+        const currentUrl = urlInput.value.trim();
+        if (!currentUrl || currentUrl === 'https://login.salesforce.com' || currentUrl === 'https://test.salesforce.com') {
+          if (orgType === 'Sandbox' || orgType === 'Scratch Org') {
+            urlInput.value = 'https://test.salesforce.com';
+          } else if (orgType === 'Production' || orgType === 'Developer') {
+            urlInput.value = 'https://login.salesforce.com';
+          }
+        }
+      }
+    }
+  });
 }
 
 async function handleClick(e) {
@@ -1037,6 +1064,11 @@ async function handleClick(e) {
 
   const action = target.dataset.action;
   const id = target.dataset.id;
+
+  // Prevent card expansion when clicking inside the actions container (but not on a specific action button)
+  if (action === 'toggle-card-expand' && e.target.closest('.card-actions')) {
+    return;
+  }
 
   switch (action) {
     // Navigation
@@ -1087,6 +1119,12 @@ async function handleClick(e) {
       renderSearchBar();
       break;
 
+
+    case 'collapse-all-folders':
+      state.expandedFolders.clear();
+      await savePreferences();
+      renderSidebar();
+      break;
 
     case 'toggle-expand':
       e.stopPropagation();
