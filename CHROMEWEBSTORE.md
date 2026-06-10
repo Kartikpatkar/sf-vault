@@ -8,29 +8,31 @@
 SF Vault+
 
 **Short Description** [REQUIRED]
-Offline-first credential organizer for Salesforce professionals. Securely store and auto-fill credentials with folder hierarchy.
+Secure offline credential organizer with nested folders and login autofill for Salesforce professionals.
 
 **Detailed Description** [REQUIRED]
-SF Vault+ is an offline-first credential organizer and productivity assistant tailored specifically for Salesforce consultants, developers, and administrators. Keep your org credentials organized, categorized, and at your fingertips.
+SF Vault+ is a secure, offline-first credential organizer and productivity assistant tailored specifically for Salesforce consultants, developers, and administrators. Keep your org credentials organized, categorized, and protected on your local device.
 
 Key Features:
 * Unlimited nested folder structure to organize credentials by client, project, or environment.
+* Secure local vault encryption: credentials and folders are encrypted on-device using AES-GCM (256-bit) and a user-defined Master Password.
+* Dynamic session key caching (in session memory only) or secure "Remember password" persistent storage.
 * Fast dynamic search across org titles, usernames, aliases, notes, and tags.
-* Star/Favorite credentials for instant access in the quick views.
-* Secure auto-fill for Salesforce Logins: open your environments in a New Tab, New Window, or Incognito Mode, and let SF Vault+ safely populate the username and password fields.
+* Star/Favorite credentials for instant access.
+* Secure auto-fill for Salesforce logins: launch environments in New Tab, New Window, or Incognito Mode, and let SF Vault+ safely populate fields.
 * Supports Salesforce Production, Sandboxes, Scratch Orgs, Custom Domains, and Experience Cloud/Communities.
-* Data security: all credentials and configuration data are stored strictly locally on your machine. No servers, no tracking, and no third-party data transmission.
-* Easily import and export your credentials vault as a JSON backup file for local migration.
+* Zero-knowledge model: no servers, no tracking, and no external data transmission.
+* Export and import your credentials vault as password-encrypted backup files.
 
 How to use:
-1. Open the extension popup from your toolbar.
+1. Open the extension popup and set up your Master Password.
 2. Create folders (e.g., "Client A", "Production Orgs") to set up your hierarchy.
-3. Click "New Credential" to add your Salesforce login URL, username, password, and environment type.
+3. Click "New Credential" to add your Salesforce details.
 4. Hover over any card and click "Login" to open the org in your preferred mode with safe, hands-free autofill.
 5. Search at any time to locate any org within seconds.
 
 Privacy & Permissions:
-SF Vault+ is designed with a zero-tracking policy. All data remains encrypted on your local device. We only request permissions necessary to open Salesforce pages and fill in the login form fields.
+SF Vault+ is designed with a zero-tracking policy. All data remains encrypted on your local device. We only request permissions necessary to open Salesforce pages, fill in login forms, and safeguard database storage size limits.
 
 Support:
 For issues, feedback, or suggestions, please visit our repository support page at:
@@ -71,6 +73,7 @@ English
 | `storage` | permissions | Used to store the credentials vault, folder hierarchy, and user theme settings locally on the device using `chrome.storage.local`, as well as temporary tab credentials via `chrome.storage.session`. |
 | `scripting` | permissions | Used to programmatically inject the auto-fill script (`content-scripts/autologin.js`) into target Salesforce tabs to populate the username and password fields. |
 | `tabs` | permissions | Used to listen for page loads (`chrome.tabs.onUpdated` and `chrome.tabs.onRemoved`) on target login tabs so that the auto-fill script is injected precisely when the login DOM is ready. |
+| `unlimitedStorage` | permissions | Used to lift profile storage write limits (10MB default) to safely support large credentials lists, attachments, and extensive custom notes. |
 | `*://login.salesforce.com/*` | host_permissions | Allows the extension to interact with and auto-fill credentials on the standard Salesforce Production login portal. |
 | `*://test.salesforce.com/*` | host_permissions | Allows the extension to interact with and auto-fill credentials on the standard Salesforce Sandbox login portal. |
 | `*://*.my.salesforce.com/*` | host_permissions | Allows the extension to interact with and auto-fill credentials on Salesforce custom domains. |
@@ -129,4 +132,4 @@ https://github.com/Kartikpatkar/sf-vault
 
 | Version | Date | Changes | Status |
 |---------|------|---------|--------|
-| 1.0.0 | 2026-06-10 | Initial release of SF Vault+ with offline storage, subfolder nesting, search, and dynamic Salesforce Experience Cloud / login auto-fill. | Draft |
+| 1.0.1 | 2026-06-11 | Integrated AES-GCM database encryption, lock/unlock UI views, password-protected backups, unlimited storage support, and resolved Experience Cloud login auto-fill issues. | Draft |
