@@ -6,6 +6,7 @@
 import FolderService from '../services/folder.service.js';
 import CredentialService from '../services/credential.service.js';
 import StorageService from '../services/storage.service.js';
+import CryptoService from '../services/crypto.service.js';
 import {
   generateId, formatDate, debounce, copyToClipboard,
   isSalesforceUrl, escapeHtml,
@@ -37,8 +38,26 @@ document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
   await loadPreferences();
-  await loadData();
   applyTheme();
+
+  const isSet = await CryptoService.isMasterPasswordSet();
+  if (!isSet) {
+    renderSetupMasterPasswordScreen();
+    return;
+  }
+
+  const unlocked = await CryptoService.isUnlocked();
+  if (!unlocked) {
+    const remembered = await CryptoService.isRemembered();
+    renderUnlockScreen('', remembered);
+    return;
+  }
+
+  // Make sure the main layout is visible and lock screen is hidden
+  document.getElementById('lock-screen').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+
+  await loadData();
   renderHeader();
   renderSearchBar();
   renderSidebar();
@@ -141,9 +160,16 @@ function renderSidebar() {
       </div>
     </div>
     <div class="sidebar-divider"></div>
-    <div class="sidebar-section" style="flex:1; overflow-y:auto;">
-      <div class="sidebar-label">Folders</div>
-      ${tree.length > 0 ? renderFolderTree(tree, 0) : '<div style="padding: 8px 10px; font-size: 11px; color: var(--text-tertiary);">No folders yet</div>'}
+    <div class="sidebar-section" style="flex:1; overflow-y:auto; display:flex; flex-direction:column;">
+      <div class="sidebar-header-row" style="display: flex; align-items: center; justify-content: space-between; padding-right: 6px;">
+        <div class="sidebar-label" style="padding-bottom: 6px;">Folders</div>
+        <button class="sidebar-collapse-btn" data-action="collapse-all-folders" title="Collapse all folders">
+          ${Icons.minus}
+        </button>
+      </div>
+      <div style="flex:1; overflow-y:auto;">
+        ${tree.length > 0 ? renderFolderTree(tree, 0) : '<div style="padding: 8px 10px; font-size: 11px; color: var(--text-tertiary);">No folders yet</div>'}
+      </div>
     </div>
     <div class="sidebar-add-folder">
       <button class="add-folder-btn" data-action="add-folder">
@@ -306,7 +332,7 @@ function renderCredentialCard(cred, showBreadcrumb = false) {
         ${breadcrumbHtml}
         <div class="card-compact-row">
           <span class="card-title" title="${escapeHtml(cred.title)}">${escapeHtml(cred.title)}</span>
-          <div class="card-actions compact" onclick="event.stopPropagation()">
+          <div class="card-actions compact">
             <button class="card-fav-btn ${isFav ? 'active' : ''}"
                     data-action="toggle-fav" data-id="${cred.id}" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">
               ${isFav ? Icons.starFilled : Icons.star}
@@ -335,7 +361,7 @@ function renderCredentialCard(cred, showBreadcrumb = false) {
           <span class="card-title" title="${escapeHtml(cred.title)}">${escapeHtml(cred.title)}</span>
         </div>
         <button class="card-fav-btn ${isFav ? 'active' : ''}"
-                data-action="toggle-fav" data-id="${cred.id}" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}" onclick="event.stopPropagation()">
+                data-action="toggle-fav" data-id="${cred.id}" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">
           ${isFav ? Icons.starFilled : Icons.star}
         </button>
       </div>
@@ -477,6 +503,7 @@ async function renderSettings() {
   const usedKb = await getStorageSize();
   const limitKb = 10240;
   const progressPercent = Math.min(100, (usedKb / limitKb) * 100);
+  const remembered = await CryptoService.isRemembered();
 
   el.innerHTML = `
     <div class="settings-header">
@@ -499,6 +526,22 @@ async function renderSettings() {
             ${Icons.download} Sample JSON
           </button>
         </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-card-title">Security & Encryption</div>
+        <div class="settings-card-desc">Lock your credentials vault immediately.</div>
+        
+        <div style="display:flex; align-items:center; gap:8px; margin: 8px 0 12px; text-align:left;">
+          <input type="checkbox" id="settings-remember" ${remembered ? 'checked' : ''} style="width:auto; height:auto; cursor:pointer;">
+          <label for="settings-remember" style="font-size:11px; color:var(--text-secondary); cursor:pointer; user-select:none;">
+            Remember password on this device (Less secure)
+          </label>
+        </div>
+
+        <button class="btn btn-secondary btn-block" data-action="lock-vault">
+          ${Icons.lock} Lock Vault
+        </button>
       </div>
 
       <div class="settings-card">
@@ -532,6 +575,163 @@ async function renderSettings() {
 
   el.classList.remove('hidden');
   document.getElementById('app').classList.add('hidden');
+
+  // Remember checkbox handler
+  const rememberCheckbox = el.querySelector('#settings-remember');
+  if (rememberCheckbox) {
+    rememberCheckbox.addEventListener('change', async (e) => {
+      if (e.target.checked) {
+        await CryptoService.rememberActiveKey();
+      } else {
+        await CryptoService.clearRemembered();
+      }
+      showToast(e.target.checked ? 'Password remembered' : 'Remembered password cleared', 'info');
+    });
+  }
+}
+
+function renderSetupMasterPasswordScreen(errorMsg = '') {
+  document.getElementById('app').classList.add('hidden');
+  const el = document.getElementById('lock-screen');
+  el.innerHTML = `
+    <div class="lock-card">
+      <div class="lock-logo">${Icons.lock}</div>
+      <div class="lock-title">Set Master Password</div>
+      <div class="lock-desc">Set a master password to secure your credentials vault. All credentials will be locally encrypted.</div>
+      
+      ${errorMsg ? `<div class="lock-error">${escapeHtml(errorMsg)}</div>` : ''}
+
+      <div class="lock-warning">
+        <strong>⚠️ Warning:</strong> If you forget this password, your credentials cannot be recovered. Please write it down or store it in a safe place.
+      </div>
+
+      <form id="setup-form" style="display:flex; flex-direction:column; gap:12px;">
+        <div class="lock-input-group">
+          <label class="form-label">Master Password</label>
+          <div class="form-password-wrapper">
+            <input type="password" id="setup-password" class="form-input" placeholder="At least 8 characters" required minlength="8">
+            <button type="button" class="form-password-toggle" id="toggle-setup-pw" tabindex="-1">${Icons.eye}</button>
+          </div>
+        </div>
+        <div class="lock-input-group">
+          <label class="form-label">Confirm Password</label>
+          <div class="form-password-wrapper">
+            <input type="password" id="setup-confirm" class="form-input" placeholder="Confirm master password" required>
+            <button type="button" class="form-password-toggle" id="toggle-setup-confirm" tabindex="-1">${Icons.eye}</button>
+          </div>
+        </div>
+        <div class="lock-remember-container">
+          <input type="checkbox" id="setup-remember" class="lock-remember-checkbox">
+          <label for="setup-remember" class="lock-remember-label">
+            Remember password on this device (Less secure)
+          </label>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top:8px;">
+          Create Encrypted Vault
+        </button>
+      </form>
+    </div>
+  `;
+  el.classList.remove('hidden');
+
+  const togglePw = (btnId, inputId) => {
+    const btn = el.querySelector('#' + btnId);
+    const input = el.querySelector('#' + inputId);
+    btn.addEventListener('click', () => {
+      const isPw = input.type === 'password';
+      input.type = isPw ? 'text' : 'password';
+      btn.innerHTML = isPw ? Icons.eyeOff : Icons.eye;
+    });
+  };
+  togglePw('toggle-setup-pw', 'setup-password');
+  togglePw('toggle-setup-confirm', 'setup-confirm');
+
+  const form = el.querySelector('#setup-form');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const password = el.querySelector('#setup-password').value;
+    const confirm = el.querySelector('#setup-confirm').value;
+    const rememberMe = el.querySelector('#setup-remember').checked;
+
+    if (password !== confirm) {
+      renderSetupMasterPasswordScreen("Passwords do not match.");
+      return;
+    }
+
+    try {
+      const existingFolders = await StorageService.get('sf_vault_folders') || [];
+      const existingCreds = await StorageService.get('sf_vault_credentials') || [];
+
+      await CryptoService.setupMasterPassword(password, rememberMe);
+
+      await FolderService.saveFolders(existingFolders);
+      await CredentialService.saveCredentials(existingCreds);
+
+      el.classList.add('hidden');
+      el.innerHTML = '';
+      await init();
+      showToast('Master password created and vault encrypted!', 'success');
+    } catch (err) {
+      renderSetupMasterPasswordScreen(err.message);
+    }
+  });
+}
+
+function renderUnlockScreen(errorMsg = '', remembered = false) {
+  document.getElementById('app').classList.add('hidden');
+  const el = document.getElementById('lock-screen');
+  el.innerHTML = `
+    <div class="lock-card">
+      <div class="lock-logo">${Icons.lock}</div>
+      <div class="lock-title">Vault is Locked</div>
+      <div class="lock-desc">Enter your master password to unlock your SF Vault+ credentials.</div>
+
+      ${errorMsg ? `<div class="lock-error">${escapeHtml(errorMsg)}</div>` : ''}
+
+      <form id="unlock-form" style="display:flex; flex-direction:column; gap:12px;">
+        <div class="lock-input-group">
+          <label class="form-label">Master Password</label>
+          <div class="form-password-wrapper">
+            <input type="password" id="unlock-password" class="form-input" placeholder="Enter password" required>
+            <button type="button" class="form-password-toggle" tabindex="-1">${Icons.eye}</button>
+          </div>
+        </div>
+        <div class="lock-remember-container">
+          <input type="checkbox" id="unlock-remember" class="lock-remember-checkbox" ${remembered ? 'checked' : ''}>
+          <label for="unlock-remember" class="lock-remember-label">
+            Remember password on this device (Less secure)
+          </label>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top:8px;">
+          Unlock Vault
+        </button>
+      </form>
+    </div>
+  `;
+  el.classList.remove('hidden');
+
+  const toggleBtn = el.querySelector('.form-password-toggle');
+  toggleBtn.addEventListener('click', () => {
+    const input = el.querySelector('#unlock-password');
+    const isPw = input.type === 'password';
+    input.type = isPw ? 'text' : 'password';
+    toggleBtn.innerHTML = isPw ? Icons.eyeOff : Icons.eye;
+  });
+
+  const form = el.querySelector('#unlock-form');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const password = el.querySelector('#unlock-password').value;
+    const rememberMe = el.querySelector('#unlock-remember').checked;
+    try {
+      await CryptoService.unlock(password, rememberMe);
+      el.classList.add('hidden');
+      el.innerHTML = '';
+      await init();
+    } catch (err) {
+      renderUnlockScreen(err.message);
+    }
+  });
 }
 
 /** Show Author / About modal */
@@ -959,17 +1159,19 @@ function setupGlobalListeners() {
   // Delegated click handler for the entire app
   document.addEventListener('click', handleClick);
 
-  // Search input
-  const searchInput = document.getElementById('search-input');
-  if (searchInput) {
-    searchInput.addEventListener('input', debounce((e) => {
-      state.searchQuery = e.target.value;
-      renderContent();
-      // Show/hide clear button
-      const clearBtn = document.querySelector('.search-clear');
-      if (clearBtn) clearBtn.classList.toggle('hidden', !state.searchQuery);
-    }, 200));
-  }
+  // Delegated search input handler (handles search bar re-render correctly)
+  const debouncedSearch = debounce((val) => {
+    state.searchQuery = val;
+    renderContent();
+    const clearBtn = document.querySelector('.search-clear');
+    if (clearBtn) clearBtn.classList.toggle('hidden', !state.searchQuery);
+  }, 200);
+
+  document.addEventListener('input', (e) => {
+    if (e.target && e.target.id === 'search-input') {
+      debouncedSearch(e.target.value);
+    }
+  });
 
   // Context menu on folders (right-click)
   document.getElementById('app-sidebar').addEventListener('contextmenu', (e) => {
@@ -1009,6 +1211,24 @@ function setupGlobalListeners() {
       handleAddTag();
     }
   });
+
+  // Change listener for org type to auto-populate URL
+  document.addEventListener('change', (e) => {
+    if (e.target && e.target.id === 'cred-orgtype') {
+      const orgType = e.target.value;
+      const urlInput = document.getElementById('cred-url');
+      if (urlInput) {
+        const currentUrl = urlInput.value.trim();
+        if (!currentUrl || currentUrl === 'https://login.salesforce.com' || currentUrl === 'https://test.salesforce.com') {
+          if (orgType === 'Sandbox' || orgType === 'Scratch Org') {
+            urlInput.value = 'https://test.salesforce.com';
+          } else if (orgType === 'Production' || orgType === 'Developer') {
+            urlInput.value = 'https://login.salesforce.com';
+          }
+        }
+      }
+    }
+  });
 }
 
 async function handleClick(e) {
@@ -1037,6 +1257,11 @@ async function handleClick(e) {
 
   const action = target.dataset.action;
   const id = target.dataset.id;
+
+  // Prevent card expansion when clicking inside the actions container (but not on a specific action button)
+  if (action === 'toggle-card-expand' && e.target.closest('.card-actions')) {
+    return;
+  }
 
   switch (action) {
     // Navigation
@@ -1088,6 +1313,12 @@ async function handleClick(e) {
       break;
 
 
+    case 'collapse-all-folders':
+      state.expandedFolders.clear();
+      await savePreferences();
+      renderSidebar();
+      break;
+
     case 'toggle-expand':
       e.stopPropagation();
       if (state.expandedFolders.has(id)) {
@@ -1117,6 +1348,11 @@ async function handleClick(e) {
     // Settings
     case 'open-settings':
       await renderSettings();
+      break;
+
+    case 'lock-vault':
+      await CryptoService.lock();
+      window.location.reload();
       break;
 
     case 'close-settings':
@@ -1478,21 +1714,63 @@ async function triggerLogin(cred, mode) {
 // IMPORT / EXPORT
 // ═══════════════════════════════════════════════════════
 async function handleExport() {
-  const exportData = {
-    version: '1.0.0',
-    exportDate: new Date().toISOString(),
-    folders: state.folders,
-    credentials: state.credentials
-  };
+  showModal(`
+    <div class="modal-header">
+      <span class="modal-title">Export Encrypted Backup</span>
+      <button class="modal-close" data-action="close-modal">${Icons.x}</button>
+    </div>
+    <form id="export-form" class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Backup Password</label>
+        <div class="form-password-wrapper">
+          <input type="password" id="export-password" class="form-input" placeholder="Enter password to encrypt backup file" required minlength="4">
+          <button type="button" class="form-password-toggle" tabindex="-1">${Icons.eye}</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-action="close-modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Export JSON</button>
+      </div>
+    </form>
+  `);
 
-  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `sf-vault-backup-${new Date().toISOString().slice(0, 10)}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('Vault exported', 'info');
+  const overlay = document.getElementById('modal-overlay');
+  
+  const toggleBtn = overlay.querySelector('.form-password-toggle');
+  toggleBtn.addEventListener('click', () => {
+    const input = overlay.querySelector('#export-password');
+    const isPw = input.type === 'password';
+    input.type = isPw ? 'text' : 'password';
+    toggleBtn.innerHTML = isPw ? Icons.eyeOff : Icons.eye;
+  });
+
+  const form = overlay.querySelector('#export-form');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const password = overlay.querySelector('#export-password').value;
+    
+    try {
+      const dataToBackup = {
+        folders: state.folders,
+        credentials: state.credentials
+      };
+      
+      const encryptedBackup = await CryptoService.encryptBackup(dataToBackup, password);
+      
+      const blob = new Blob([JSON.stringify(encryptedBackup, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sf-vault-backup-encrypted-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      hideModal();
+      showToast('Vault exported and encrypted successfully', 'success');
+    } catch (err) {
+      showToast('Export failed: ' + err.message, 'error');
+    }
+  });
 }
 
 function handleImport() {
@@ -1505,30 +1783,96 @@ function handleImport() {
 
     try {
       const text = await file.text();
-      const data = JSON.parse(text);
+      const backupData = JSON.parse(text);
 
-      if (!data.folders || !data.credentials) {
-        showToast('Invalid backup file', 'error');
-        return;
+      if (backupData.encrypted) {
+        showImportPasswordModal(backupData);
+      } else {
+        if (!backupData.folders || !backupData.credentials) {
+          showToast('Invalid backup file', 'error');
+          return;
+        }
+        await saveImportedData(backupData.folders, backupData.credentials);
       }
-
-      // Replace all data
-      await StorageService.set('sf_vault_folders', data.folders);
-      await StorageService.set('sf_vault_credentials', data.credentials);
-      await loadData();
-      state.currentFolderId = null;
-      state.showingAll = true;
-      state.showingFavorites = false;
-      state.expandedFolders = new Set();
-      await savePreferences();
-      renderSidebar();
-      renderContent();
-      showToast(`Imported ${data.credentials.length} credentials`, 'success');
     } catch (err) {
       showToast('Import failed: ' + err.message, 'error');
     }
   });
   input.click();
+}
+
+function showImportPasswordModal(backupData) {
+  showModal(`
+    <div class="modal-header">
+      <span class="modal-title">Decrypt Backup File</span>
+      <button class="modal-close" data-action="close-modal">${Icons.x}</button>
+    </div>
+    <form id="import-decrypt-form" class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Backup Password</label>
+        <div class="form-password-wrapper">
+          <input type="password" id="import-password" class="form-input" placeholder="Enter password to decrypt file" required>
+          <button type="button" class="form-password-toggle" tabindex="-1">${Icons.eye}</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-action="close-modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Decrypt & Import</button>
+      </div>
+    </form>
+  `);
+
+  const overlay = document.getElementById('modal-overlay');
+  
+  const toggleBtn = overlay.querySelector('.form-password-toggle');
+  toggleBtn.addEventListener('click', () => {
+    const input = overlay.querySelector('#import-password');
+    const isPw = input.type === 'password';
+    input.type = isPw ? 'text' : 'password';
+    toggleBtn.innerHTML = isPw ? Icons.eyeOff : Icons.eye;
+  });
+
+  const form = overlay.querySelector('#import-decrypt-form');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const password = overlay.querySelector('#import-password').value;
+    
+    try {
+      const decryptedData = await CryptoService.decryptBackup(backupData, password);
+      
+      if (!decryptedData.folders || !decryptedData.credentials) {
+        showToast('Invalid backup structure inside decrypted file', 'error');
+        return;
+      }
+      
+      await saveImportedData(decryptedData.folders, decryptedData.credentials);
+      hideModal();
+    } catch (err) {
+      showToast('Decryption failed. Incorrect password.', 'error');
+    }
+  });
+}
+
+async function saveImportedData(folders, credentials) {
+  await FolderService.saveFolders(folders);
+  await CredentialService.saveCredentials(credentials);
+  
+  await loadData();
+  state.currentFolderId = null;
+  state.showingAll = true;
+  state.showingFavorites = false;
+  state.expandedFolders = new Set();
+  await savePreferences();
+  
+  const settingsOpen = !document.getElementById('settings-view').classList.contains('hidden');
+  if (settingsOpen) {
+    await renderSettings();
+  } else {
+    renderSidebar();
+    renderContent();
+  }
+  
+  showToast(`Imported ${credentials.length} credentials`, 'success');
 }
 
 // ═══════════════════════════════════════════════════════

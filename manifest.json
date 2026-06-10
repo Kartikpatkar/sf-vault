@@ -21,12 +21,16 @@
   "permissions": [
     "storage",
     "scripting",
-    "tabs"
+    "tabs",
+    "unlimitedStorage"
   ],
   "host_permissions": [
     "*://login.salesforce.com/*",
     "*://test.salesforce.com/*",
-    "*://*.my.salesforce.com/*"
+    "*://*.my.salesforce.com/*",
+    "*://*.force.com/*",
+    "*://*.my.site.com/*",
+    "*://*.mil.site.com/*"
   ],
   "background": {
     "service_worker": "service-worker.js"

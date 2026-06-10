@@ -308,6 +308,25 @@ textarea {
   padding: 6px 10px 4px;
 }
 
+.sidebar-collapse-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: color 0.2s, background-color 0.2s;
+  margin-top: 2px;
+}
+
+.sidebar-collapse-btn:hover {
+  color: var(--text-secondary);
+  background-color: var(--bg-tertiary);
+}
+
 .sidebar-divider {
   height: 1px;
   background: var(--border);
@@ -1113,7 +1132,8 @@ textarea {
   padding: 2px 0;
 }
 
-#cred-password {
+#cred-password,
+#export-password {
   width: 100%;
 }
 
@@ -1359,7 +1379,7 @@ textarea {
   align-items: center;
   gap: 10px;
   background: var(--accent-muted);
-  border: 1px solid rgba(99,102,241,0.2);
+  border: 1px solid rgba(99, 102, 241, 0.2);
   border-radius: var(--radius-md);
   padding: 10px 14px;
 }
@@ -1411,7 +1431,7 @@ textarea {
 .author-link:hover {
   opacity: 0.88;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .author-link:active {
@@ -1884,4 +1904,163 @@ textarea {
   flex-direction: column;
   gap: 6px;
   animation: fadeIn var(--transition-fast);
+}
+
+/* ═══════════════════════════════════════════════════════
+   LOCK SCREEN & SECURE VIEWS
+   ═══════════════════════════════════════════════════════ */
+.lock-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  height: 100%;
+  width: 100%;
+  background: var(--bg-primary);
+  padding: 24px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.lock-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px 20px;
+  width: 100%;
+  max-width: 320px;
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: auto;
+  animation: modalEnter 0.25s ease;
+}
+
+.lock-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent) 0%, #8b5cf6 100%);
+  color: white;
+  margin: 0 auto 4px;
+  box-shadow: 0 6px 20px var(--accent-glow);
+}
+
+.lock-title {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+  margin-top: 6px;
+}
+
+.lock-desc {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  line-height: 1.5;
+}
+
+.lock-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: var(--danger);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 500;
+  text-align: left;
+  animation: fadeIn 0.2s ease;
+}
+
+.lock-warning {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  color: #d97706;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.lock-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.lock-input-group .form-password-wrapper {
+  width: 100%;
+}
+
+.lock-input-group input {
+  width: 100%;
+  padding-right: 36px;
+}
+
+.lock-remember-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 10px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.lock-remember-container:hover {
+  border-color: var(--accent);
+  background: var(--accent-muted);
+}
+
+.lock-remember-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--text-tertiary);
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  background: transparent;
+}
+
+.lock-remember-checkbox:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.lock-remember-checkbox:checked::after {
+  content: '✓';
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.lock-remember-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.lock-remember-container:hover .lock-remember-label {
+  color: var(--text-primary);
 }

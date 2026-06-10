@@ -4,6 +4,7 @@
  */
 
 import StorageService from './storage.service.js';
+import CryptoService from './crypto.service.js';
 import { generateId } from '../utils/utils.js';
 
 const CREDENTIALS_KEY = 'sf_vault_credentials';
@@ -11,12 +12,36 @@ const CREDENTIALS_KEY = 'sf_vault_credentials';
 const CredentialService = {
   /** Get all credentials */
   async getAllCredentials() {
-    return (await StorageService.get(CREDENTIALS_KEY)) || [];
+    const raw = await StorageService.get(CREDENTIALS_KEY);
+    if (!raw) return [];
+
+    const isSet = await CryptoService.isMasterPasswordSet();
+    if (isSet) {
+      const unlocked = await CryptoService.isUnlocked();
+      if (!unlocked) return [];
+      try {
+        const decrypted = await CryptoService.decrypt(raw);
+        return JSON.parse(decrypted);
+      } catch (e) {
+        console.error('SF Vault+: Failed to decrypt credentials:', e);
+        return [];
+      }
+    }
+    return raw;
   },
 
   /** Save the full credentials array */
   async saveCredentials(credentials) {
-    await StorageService.set(CREDENTIALS_KEY, credentials);
+    const isSet = await CryptoService.isMasterPasswordSet();
+    if (isSet) {
+      const unlocked = await CryptoService.isUnlocked();
+      if (!unlocked) throw new Error('Vault is locked. Cannot save.');
+      const serialized = JSON.stringify(credentials);
+      const encrypted = await CryptoService.encrypt(serialized);
+      await StorageService.set(CREDENTIALS_KEY, encrypted);
+    } else {
+      await StorageService.set(CREDENTIALS_KEY, credentials);
+    }
   },
 
   /** Create a new credential */

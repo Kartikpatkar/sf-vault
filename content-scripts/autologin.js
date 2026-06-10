@@ -16,20 +16,107 @@
     const { username, password } = pendingAutoFill;
     if (!username && !password) return;
 
-    // Clean up immediately so it doesn't fire again on refresh
-    await chrome.storage.session.remove('pendingAutoFill');
+    // Helper to find all elements matching selector, piercing shadow DOM roots
+    const querySelectorAllDeep = (selector, root = document) => {
+      const elements = Array.from(root.querySelectorAll(selector));
+      const hasShadow = el => el.shadowRoot;
+      const shadowElements = Array.from(root.querySelectorAll('*')).filter(hasShadow);
+      
+      for (const el of shadowElements) {
+        elements.push(...querySelectorAllDeep(selector, el.shadowRoot));
+      }
+      return elements;
+    };
 
-    // Wait for a DOM element to appear (handles slow-loading pages)
-    const waitForElement = (selector, timeoutMs = 8000) => {
+    const querySelectorDeep = (selector, root = document) => {
+      const elements = querySelectorAllDeep(selector, root);
+      return elements.length > 0 ? elements[0] : null;
+    };
+
+    // Helper to check if an element is visible in the DOM
+    const isVisible = el => {
+      if (el.type === 'hidden') return false;
+      const style = window.getComputedStyle(el);
+      if (style.display === 'none' || style.visibility === 'hidden') return false;
+      const rects = el.getClientRects();
+      if (el.offsetWidth === 0 && el.offsetHeight === 0 && rects.length === 0) return false;
+      return true;
+    };
+
+    // Robust function to locate login fields piercing shadow DOM
+    const findLoginFields = () => {
+      const allInputs = querySelectorAllDeep('input').filter(isVisible);
+      let usernameField = null;
+      let passwordField = null;
+
+      // Try exact ID/attribute matches first on visible elements
+      usernameField = querySelectorDeep('#username') || 
+                      querySelectorDeep('input[autocomplete="username"]') || 
+                      querySelectorDeep('input[name="username"]');
+                      
+      passwordField = querySelectorDeep('#password') || 
+                      querySelectorDeep('input[type="password"]');
+
+      if (usernameField && passwordField && isVisible(usernameField) && isVisible(passwordField)) {
+        return { usernameField, passwordField };
+      }
+
+      // Reset and use scored visible input fallback
+      usernameField = null;
+      passwordField = null;
+
+      for (const input of allInputs) {
+        const type = (input.getAttribute('type') || '').toLowerCase();
+        const name = (input.getAttribute('name') || '').toLowerCase();
+        const id = (input.getAttribute('id') || '').toLowerCase();
+        const placeholder = (input.getAttribute('placeholder') || '').toLowerCase();
+        const ariaLabel = (input.getAttribute('aria-label') || '').toLowerCase();
+        const className = (input.className || '').toLowerCase();
+
+        if (type === 'password' || name === 'pw' || name === 'password' || id === 'password') {
+          if (!passwordField) {
+            passwordField = input;
+          }
+          continue;
+        }
+
+        if (
+          name === 'username' ||
+          id === 'username' ||
+          placeholder.includes('username') ||
+          placeholder.includes('email') ||
+          ariaLabel.includes('username') ||
+          ariaLabel.includes('email') ||
+          className.includes('username') ||
+          className.includes('email')
+        ) {
+          if (!usernameField) {
+            usernameField = input;
+          }
+        }
+      }
+
+      return { usernameField, passwordField };
+    };
+
+    // Wait for the login fields to appear (handles slow-loading LWC/Aura components)
+    const waitForLoginFields = (timeoutMs = 10000) => {
       return new Promise((resolve, reject) => {
-        const existing = document.querySelector(selector);
-        if (existing) return resolve(existing);
+        const check = () => {
+          const fields = findLoginFields();
+          if (fields.usernameField && fields.passwordField) {
+            resolve(fields);
+            return true;
+          }
+          return false;
+        };
+
+        if (check()) return;
 
         const observer = new MutationObserver(() => {
-          const el = document.querySelector(selector);
-          if (el) {
+          if (check()) {
             observer.disconnect();
-            resolve(el);
+            clearInterval(pollInterval);
           }
         });
 
@@ -38,14 +125,27 @@
           subtree: true
         });
 
+        const pollInterval = setInterval(() => {
+          if (check()) {
+            observer.disconnect();
+            clearInterval(pollInterval);
+          }
+        }, 150);
+
         setTimeout(() => {
           observer.disconnect();
-          reject(new Error(`SF Vault+: Element "${selector}" not found within ${timeoutMs}ms`));
+          clearInterval(pollInterval);
+          const finalFields = findLoginFields();
+          if (finalFields.usernameField && finalFields.passwordField) {
+            resolve(finalFields);
+          } else {
+            reject(new Error(`SF Vault+: Login fields not found within ${timeoutMs}ms`));
+          }
         }, timeoutMs);
       });
     };
 
-    // Simulate realistic user input
+    // Simulate realistic user input events
     const fillField = (field, value) => {
       field.focus();
       field.value = value;
@@ -54,45 +154,43 @@
       field.dispatchEvent(new Event('blur', { bubbles: true }));
     };
 
-    // Salesforce standard login page selectors
-    // login.salesforce.com and test.salesforce.com use #username, #password
-    // Custom domains (*.my.salesforce.com) may use the same or Lightning selectors
-    const selectors = [
-      { user: '#username', pass: '#password' },                         // Standard login
-      { user: 'input[name="username"]', pass: 'input[name="pw"]' },     // Alternate
-      { user: 'input[type="email"]', pass: 'input[type="password"]' }   // Generic fallback
-    ];
+    try {
+      const { usernameField, passwordField } = await waitForLoginFields(10000);
 
-    let filled = false;
+      fillField(usernameField, username);
+      fillField(passwordField, password);
 
-    for (const { user, pass } of selectors) {
-      try {
-        const usernameField = await waitForElement(user, 3000);
-        const passwordField = await waitForElement(pass, 3000);
+      // Clean up storage only after successful auto-fill
+      await chrome.storage.session.remove('pendingAutoFill');
 
-        if (usernameField && passwordField) {
-          fillField(usernameField, username);
-          fillField(passwordField, password);
+      // Focus the Login button
+      let loginBtn = querySelectorDeep('#Login') ||
+                     querySelectorDeep('button.loginButton') ||
+                     querySelectorDeep('input[type="submit"]') ||
+                     querySelectorDeep('button[type="submit"]') ||
+                     querySelectorDeep('.loginButton') ||
+                     querySelectorDeep('button[id*="login"]') ||
+                     querySelectorDeep('input[id*="login"]');
 
-          // Focus the Login button (if visible) so user can just press Enter
-          const loginBtn = document.querySelector('#Login') ||
-                           document.querySelector('input[type="submit"]') ||
-                           document.querySelector('button[type="submit"]');
-          if (loginBtn) {
-            loginBtn.focus();
+      if (!loginBtn) {
+        // Text-content based search as a fallback
+        const allButtons = querySelectorAllDeep('button').concat(querySelectorAllDeep('input[type="button"]'));
+        for (const button of allButtons) {
+          const text = (button.textContent || button.value || '').toLowerCase();
+          if (text.includes('log in') || text.includes('login') || text.includes('sign in')) {
+            loginBtn = button;
+            break;
           }
-
-          filled = true;
-          break;
         }
-      } catch {
-        // Selector not found, try next
-        continue;
       }
-    }
 
-    if (!filled) {
-      console.info('SF Vault+: Could not find login form fields on this page.');
+      if (loginBtn) {
+        loginBtn.focus();
+      }
+    } catch (err) {
+      console.warn(err.message);
+      // Clean up storage on final timeout failure to prevent stale credential issues
+      await chrome.storage.session.remove('pendingAutoFill');
     }
 
   } catch (err) {
