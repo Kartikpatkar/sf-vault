@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SF Vault+</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="header" id="app-header"></header>
+
+    <!-- Search Bar -->
+    <div class="search-bar" id="app-search"></div>
+
+    <!-- Main Content Area (sidebar + credentials) -->
+    <div class="main-content" id="app-main">
+      <aside class="sidebar" id="app-sidebar"></aside>
+      <section class="content" id="app-content"></section>
+    </div>
+
+    <!-- Action Bar -->
+    <footer class="action-bar" id="app-actions"></footer>
+  </div>
+
+  <!-- Settings View (toggled visibility) -->
+  <div id="settings-view" class="settings-view hidden"></div>
+
+  <!-- Modal Overlay -->
+  <div id="modal-overlay" class="modal-overlay hidden"></div>
+
+  <!-- Toast Notifications -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Context Menu (right-click) -->
+  <div id="context-menu" class="context-menu hidden"></div>
+
+  <!-- Dropdown Menu -->
+  <div id="dropdown-menu" class="dropdown-menu hidden"></div>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
