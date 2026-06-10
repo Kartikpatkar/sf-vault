@@ -1,150 +1,566 @@
-# SF Vault+ — Salesforce Credential Manager
+# 🗂️ SF Vault+ – Salesforce Credential Manager & Org Launcher
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/Version-1.0.1-blue.svg)](https://github.com/Kartikpatkar/sf-vault)
+[![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg)](#)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-green.svg)](https://developer.chrome.com/docs/extensions/mv3/)
+[![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-green.svg?logo=google-chrome)](#)
+[![Salesforce](https://img.shields.io/badge/Salesforce-Developer%20Tool-00A1E0.svg)](#)
 
-> **Offline-first credential organization and productivity tool for Salesforce professionals.**  
-> Securely store, organize, and manage credentials across unlimited folders — right in your browser.
+> **Tagline:** *Organize, manage, and launch Salesforce credentials with speed, structure, and confidence.*
 
 ---
 
-## ✨ Features
+## ✨ Overview
 
-### 🗂️ Folder-Based Organization
-- Create **unlimited nested folders** to organize credentials by client, org type, team, or any structure you choose
-- **Subfolder cards** visible inside parent folders for easy navigation
-- **Clickable breadcrumb path** — navigate up your folder hierarchy instantly
-- Right-click folder context menu: Add Subfolder, Rename, Delete
+**SF Vault+** is a modern, offline-first Chrome Extension built specifically for Salesforce Developers, Admins, Architects, Consultants, QA teams, and support engineers who manage multiple Salesforce environments daily.
+
+Unlike traditional password managers, SF Vault+ focuses on:
+
+* Salesforce credential organization
+* Client-based folder structures
+* Multi-org management
+* Fast credential access
+* One-click login workflows
+* Local-first privacy
+
+Whether you're managing:
+
+```text
+Client A
+├── Production
+├── UAT
+├── SIT
+└── Development
+
+Client B
+├── Production
+└── Sandbox
+
+Client C
+├── Production
+└── UAT
+```
+
+SF Vault+ helps you stay organized without spreadsheets, sticky notes, shared documents, or generic password managers.
+
+---
+
+## 🚀 Key Features
+
+### 🗂️ Unlimited Folder & Subfolder Organization
+
+Organize credentials using a hierarchical folder structure.
+
+Examples:
+
+```text
+Salesforce
+├── Client A
+│   ├── Production
+│   ├── UAT
+│   └── Dev
+│
+├── Client B
+│   ├── Production
+│   └── Sandbox
+│
+AWS
+│
+Databases
+```
+
+Features include:
+
+* Unlimited nested folders
+* Subfolder navigation cards
+* Folder tree sidebar
+* Folder counts
+* Breadcrumb navigation
+* Folder rename
+* Folder deletion
+* Move credentials between folders
+
+---
 
 ### 🔑 Credential Management
-- Store **username, password, security token, OAuth token, Org ID, URL, tags, and notes**
-- Support for **all Salesforce org types**: Production, Sandbox, Developer, Scratch, Trailhead, Partner, Government
-- **Compact card view** — shows only the credential name + action icons; expands on click to reveal full details
-- **Favorites** — star any credential for instant access from the sidebar
-- Copy username, password, security token, or URL to clipboard in one click
 
-### ⚡ Auto-Login
-- Detects Salesforce login pages (`login.salesforce.com`, `test.salesforce.com`, `*.my.salesforce.com`)
-- **Auto-fills** username and password fields
-- Launch login via the extension popup with a single click
-- Works in both standard and incognito windows (incognito requires manual permission)
+Store and organize:
 
-### 🔍 Search
-- Live full-text search across title, username, alias, Org ID, notes, and tags
-- Results display with folder breadcrumbs for context
+* Salesforce Credentials
+* AWS Credentials
+* Database Credentials
+* Internal Applications
+* Third-party Services
+* API Credentials
 
-### ⚙️ Settings & Backup
-- **Export vault** — download all credentials as a JSON file
-- **Import vault** — restore from a previously exported JSON backup
-- **Download Sample JSON** — get a reference template to create your data
-- **Storage Usage bar** — see how much of Chrome's local storage you've used
-- **Danger Zone** — clear all data with confirmation
-- **Light / Dark theme** toggle — your preference is remembered
-- **About the Author** — profile card with social links
+Credential fields include:
 
----
-
-## 🛠️ Installation
-
-### Option 1: Chrome Web Store *(Coming Soon)*
-
-The extension will be published to the Chrome Web Store soon.
-
-### Option 2: Load Unpacked (Developer Mode)
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/Kartikpatkar/sf-vault.git
-   cd sf-vault
-   ```
-
-2. **Open Chrome** and navigate to `chrome://extensions/`
-
-3. **Enable Developer Mode** using the toggle in the top-right corner
-
-4. Click **Load unpacked** and select the root `sf-vault/` folder (the one containing `manifest.json`)
-
-5. The **SF Vault+** icon will appear in your Chrome toolbar — click it to open the popup
-
-> **Incognito Support:** To use auto-fill in incognito windows, go to `chrome://extensions/` → SF Vault+ → Details → enable **"Allow in Incognito"**.
+* Title
+* Username
+* Password
+* Security Token
+* OAuth Token
+* Login URL
+* Alias
+* Org ID
+* Tags
+* Notes
+* Color Labels
 
 ---
 
-## 📦 Usage
+### ☁️ Salesforce Org Support
 
-### Adding Your First Credential
+Built specifically for Salesforce professionals.
 
-1. Click the **SF Vault+** toolbar icon
-2. Click **New Folder** (action bar) to create a root folder (e.g. "Clients")
-3. Navigate into the folder, then click **New Sub Folder** in the sidebar to add nested folders
-4. Click **+ New Credential** (action bar) to add a credential to the current folder
-5. Fill in the org details and click **Save**
+Supported org types:
 
-### Auto-Login
+* Production
+* Sandbox
+* Developer Edition
+* Scratch Org
+* Trailhead Playground
+* Partner Org
+* Government Cloud
+* Custom Domain
+* Community
 
-1. Open the credential card and click the **Login** (↗) button
-2. Select **Auto-login (current tab)** or **Open new tab**
-3. The extension detects the Salesforce login page and fills in your credentials automatically
-
-### Backup & Restore
-
-1. Open **Settings** (⚙ icon in the header)
-2. Use **Export** to download a `sf-vault-backup.json` snapshot of all your data
-3. Use **Import** to restore from a backup file
-4. Use **Sample JSON** to download a reference template
+Visual color-coded badges help quickly identify environments.
 
 ---
 
-## 📁 Project Structure
+### ⭐ Favorites
 
+Mark important credentials as favorites.
+
+Quickly access:
+
+* Production orgs
+* Frequently used sandboxes
+* Critical customer environments
+
+Dedicated Favorites section in the sidebar.
+
+---
+
+### 🏷️ Tags & Metadata
+
+Organize credentials with tags.
+
+Examples:
+
+```text
+production
+sandbox
+uat
+customer-a
+customer-b
+critical
+migration
 ```
+
+Search and filter instantly using tags.
+
+---
+
+### 🔍 Global Search
+
+Instant full-text search across:
+
+* Credential title
+* Username
+* Alias
+* Org ID
+* Notes
+* Tags
+
+Search results display folder breadcrumbs for context.
+
+---
+
+### ⚡ Auto Login
+
+Launch Salesforce logins directly from the extension.
+
+Supported domains:
+
+* login.salesforce.com
+* test.salesforce.com
+* *.my.salesforce.com
+
+Features:
+
+* Auto-fill username
+* Auto-fill password
+* Open in new tab
+* Open in current tab
+* Open in incognito window
+
+---
+
+### 📦 Import & Export
+
+Protect your vault with local backups.
+
+#### Export
+
+Download your entire vault as:
+
+```json
+{
+  "folders": [],
+  "credentials": []
+}
+```
+
+#### Import
+
+Restore:
+
+* Previous SF Vault+ backups
+* Migration files
+* Shared vault exports
+
+#### Sample JSON
+
+Generate a sample file to understand the format before importing.
+
+---
+
+### ⚙️ Settings & Storage
+
+Manage:
+
+* Light Theme
+* Dark Theme
+* Storage Usage
+* Backup & Restore
+* Clear Vault Data
+
+Storage usage is displayed visually with a progress bar.
+
+---
+
+### 🎨 Modern Developer Experience
+
+Built using a modern design system featuring:
+
+* Dark Mode by default
+* Glassmorphism effects
+* Smooth animations
+* Responsive layout
+* Premium SaaS styling
+* Keyboard-friendly workflows
+
+Designed specifically for daily Salesforce usage.
+
+---
+
+## 📸 Screenshots
+
+### 🌑 Dark Theme
+
+* Dashboard
+* Folder Tree
+* Credential View
+* Login Launcher
+* Settings Panel
+
+### ☀️ Light Theme
+
+* Dashboard
+* Search Results
+* Import / Export
+* Favorites View
+
+---
+
+## 🛠 Built With
+
+* HTML5
+* CSS3
+* Vanilla JavaScript (ES Modules)
+* Chrome Extensions API
+* Manifest V3
+* Chrome Storage API
+* Service Workers
+* Content Scripts
+
+Architecture:
+
+```text
 sf-vault/
-├── manifest.json              # Extension manifest (MV3)
-├── service-worker.js          # Background service worker (auto-login coordination)
-├── popup/
-│   ├── popup.html             # Extension popup shell
-│   ├── popup.js               # Main UI logic, state, event delegation
-│   └── popup.css              # Design system & component styles
-├── content-scripts/
-│   └── autologin.js           # Injected into Salesforce login pages
-├── services/
-│   ├── credential.service.js  # Credential CRUD operations
-│   ├── folder.service.js      # Folder hierarchy & tree building
-│   └── storage.service.js     # chrome.storage.local wrapper
-└── utils/
-    └── utils.js               # Shared helpers, constants, SVG icons
+
+manifest.json
+
+service-worker.js
+
+popup/
+├── popup.html
+├── popup.js
+└── popup.css
+
+content-scripts/
+└── autologin.js
+
+services/
+├── storage.service.js
+├── folder.service.js
+├── credential.service.js
+
+utils/
+└── utils.js
 ```
 
 ---
 
-## 🔐 Privacy & Security
+## 📦 Installation
 
-- **All data is stored locally** in `chrome.storage.local` — nothing is ever sent to a server
-- Credentials never leave your device
-- No telemetry, no analytics, no external API calls
-- Open source — audit the code yourself
+### 🌐 Chrome Web Store
+
+Coming Soon.
+
+---
+
+### 🔧 Load Extension Manually
+
+Clone the repository:
+
+```bash
+git clone https://github.com/Kartikpatkar/sf-vault.git
+cd sf-vault
+```
+
+Open:
+
+```text
+chrome://extensions
+```
+
+Enable:
+
+```text
+Developer Mode
+```
+
+Click:
+
+```text
+Load Unpacked
+```
+
+Select the project folder containing:
+
+```text
+manifest.json
+```
+
+Done 🎉
+
+---
+
+## 🎯 How To Use
+
+### Create Your First Vault
+
+1. Open SF Vault+
+2. Create a root folder
+3. Create subfolders
+4. Add credentials
+5. Save
+
+Example:
+
+```text
+Salesforce
+└── Client A
+    ├── Production
+    ├── UAT
+    └── Dev
+```
+
+---
+
+### Add Credentials
+
+1. Open desired folder
+2. Click New Credential
+3. Enter details
+4. Save
+
+---
+
+### Launch Login
+
+1. Open credential card
+2. Click Login
+3. Choose:
+
+* Current Tab
+* New Tab
+* Incognito Window
+
+SF Vault+ handles the rest.
+
+---
+
+### Backup Your Vault
+
+1. Open Settings
+2. Click Export
+3. Save backup file
+
+To restore:
+
+1. Click Import
+2. Select backup file
+3. Confirm
+
+---
+
+## 🧪 Current Capabilities
+
+✅ Unlimited folders
+
+✅ Nested subfolders
+
+✅ Credential CRUD
+
+✅ Salesforce org support
+
+✅ Favorites
+
+✅ Tags
+
+✅ Global Search
+
+✅ Auto Login
+
+✅ Import
+
+✅ Export
+
+✅ Storage Usage Monitoring
+
+✅ Light Theme
+
+✅ Dark Theme
+
+✅ Offline First
+
+✅ Chrome Storage Integration
+
+✅ Manifest V3
+
+---
+
+## 🛣️ Roadmap
+
+### Version 1.1
+
+* Recently Used Credentials
+* Folder Credential Counts
+* Bulk Actions
+* Enhanced Search
+
+### Version 1.2
+
+* Smart Views
+* Production View
+* Sandbox View
+* Recent Logins
+
+### Version 1.3
+
+* Omnibox Search
+* Keyboard Shortcuts
+* Quick Launcher
+
+### Version 2.0
+
+* Optional Encryption
+* Master Password
+* WebAuthn Support
+* Biometric Unlock
+
+---
+
+## 🔐 Security & Privacy
+
+### Privacy First
+
+SF Vault+ follows a strict local-first architecture.
+
+### Security Principles
+
+1. No external servers
+2. No analytics
+3. No telemetry
+4. No tracking
+5. No account creation
+6. No cloud dependency
+7. All processing happens locally
+
+### Storage
+
+Credentials are stored using:
+
+```javascript
+chrome.storage.local
+```
+
+Nothing leaves your browser.
+
+---
+
+## 🔑 Permissions
+
+| Permission | Purpose                        |
+| ---------- | ------------------------------ |
+| storage    | Store credentials and settings |
+| tabs       | Launch login sessions          |
+| scripting  | Auto-fill login pages          |
+| activeTab  | Detect current Salesforce page |
+
+No unnecessary permissions requested.
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on submitting issues and pull requests.
+Contributions, ideas, bug reports, and feature requests are welcome.
+
+1. Fork repository
+2. Create feature branch
+3. Commit changes
+4. Push branch
+5. Open Pull Request
 
 ---
 
-## 📄 License
+## 🧠 Author
 
-This project is licensed under the [MIT License](LICENSE).
+Built by **Kartik Patkar**
+
+Salesforce Developer • Chrome Extension Builder
+
+GitHub:
+https://github.com/Kartikpatkar
+
+LinkedIn:
+https://linkedin.com/in/kartik-patkar
+
+Trailhead:
+https://www.salesforce.com/trailblazer/kpatkar1
 
 ---
 
-## 👤 Author
+## 📜 License
 
-**Kartik Patkar**
+Licensed under the MIT License.
 
-[![GitHub](https://img.shields.io/badge/GitHub-Kartikpatkar-black?logo=github)](https://github.com/Kartikpatkar/diff-board)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-kartik--patkar-blue?logo=linkedin)](https://www.linkedin.com/in/kartik-patkar)
-[![Trailhead](https://img.shields.io/badge/Trailhead-kpatkar1-00a1e0?logo=salesforce)](https://www.salesforce.com/trailblazer/kpatkar1)
+Free to use, modify, and distribute.
 
-> Built with ❤️ for the Salesforce community.
+---
+
+> **SF Vault+** — Because managing Salesforce credentials should be organized, secure, and effortless.
