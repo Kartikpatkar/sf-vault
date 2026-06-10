@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SF Vault+",
-  "description": "Offline-first credential organization and productivity tool for Salesforce professionals. Securely store, organize, and manage credentials with unlimited folder hierarchy.",
+  "description": "Secure offline credential organizer with nested folders and login autofill for Salesforce professionals.",
   "version": "1.0.0",
   "action": {
     "default_popup": "popup/popup.html",
