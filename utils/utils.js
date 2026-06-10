@@ -57,10 +57,14 @@ export function isSalesforceUrl(url) {
   if (!url) return false;
   try {
     const u = new URL(url);
+    const host = u.hostname;
     return (
-      u.hostname === 'login.salesforce.com' ||
-      u.hostname === 'test.salesforce.com' ||
-      u.hostname.endsWith('.my.salesforce.com')
+      host === 'login.salesforce.com' ||
+      host === 'test.salesforce.com' ||
+      host.endsWith('.my.salesforce.com') ||
+      host.endsWith('.force.com') ||
+      host.endsWith('.my.site.com') ||
+      host.endsWith('.mil.site.com')
     );
   } catch {
     return false;
