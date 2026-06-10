@@ -20,10 +20,11 @@ To provide its core functionality (credential organization and Salesforce login 
 
 SF Vault+ is designed with an **offline-first, zero-tracking architecture**:
 
-* **Local Storage Only**: All credentials, folder hierarchies, and settings are stored locally on your physical device using the browser's sandbox environment (`chrome.storage.local`).
+* **Local Storage & Encryption**: All credentials, folder hierarchies, and settings are stored locally on your physical device using the browser's sandbox environment (`chrome.storage.local`). Stored sensitive data is encrypted on-device using AES-GCM (256-bit) with a key derived from your user-defined Master Password.
 * **No Cloud Syncing**: The extension does **not** use `chrome.storage.sync` or any external cloud services. Your data never leaves your device.
 * **No Remote Servers**: SF Vault+ does **not** transmit any credential, session, or usage data off your device. There is no remote database or server connection.
-* **Temporary Session Data**: When launching an auto-fill login action, credentials are temporarily placed in the browser's session storage (`chrome.storage.session`). This session data exists only in memory and is programmatically cleared immediately upon a successful login, early tab closure, or after a 20-second timeout.
+* **Temporary Session Data**: When launching an auto-fill login action, credentials are temporarily placed in the browser's session storage (`chrome.storage.session`). This session data is stored in memory and is programmatically cleared immediately upon a successful login, early tab closure, or after a 20-second timeout.
+
 
 ---
 
@@ -46,7 +47,7 @@ You have complete control over all data stored by the extension:
 
 * **User-Initiated Deletion**: You can delete individual credentials or entire folders at any time directly through the extension's user interface.
 * **Full Database Purge**: You can wipe the entire database by clicking the "Clear All Data" option in the settings menu, or by uninstalling the extension from your browser.
-* **Local Backups**: The import/export features generate a plain-text JSON backup file of your vault. Because this file contains your raw credentials, you are responsible for the physical security of the exported JSON file on your machine.
+* **Local Backups**: The import/export features generate a password-encrypted backup file of your vault. The backup file is encrypted using AES-GCM (256-bit) with a user-supplied password to safeguard your credentials.
 
 ---
 
