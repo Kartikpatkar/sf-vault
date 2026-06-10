@@ -50,4 +50,4 @@ We may update this Privacy Policy from time to time to reflect functional change
 ## 7. Contact
 If you have any questions, feedback, or concerns regarding data privacy and security, please contact us or open an issue on our support page:
 * **Support Page**: [https://github.com/Kartikpatkar/sf-vault/issues](https://github.com/Kartikpatkar/sf-vault/issues)
-* **Contact Email**: [EMAIL_ADDRESS]
+* **Contact Email**: [kartikkp.assets@gmail.com](kartikkp.assets@gmail.com)
