@@ -47,20 +47,35 @@ async function handleOpenAndLogin({ loginUrl, username, password, mode }) {
       pendingAutoFill: { tabId, username, password }
     });
 
-    // Wait for the page to finish loading, then inject the auto-fill script
-    chrome.tabs.onUpdated.addListener(function listener(updatedTabId, changeInfo) {
-      if (updatedTabId === tabId && changeInfo.status === 'complete') {
-        chrome.tabs.onUpdated.removeListener(listener);
+    // Wait for the page to finish loading (including redirects) and inject the script
+    const injectionTimeout = setTimeout(() => {
+      chrome.tabs.onUpdated.removeListener(listener);
+      chrome.tabs.onRemoved.removeListener(removedListener);
+      chrome.storage.session.remove('pendingAutoFill').catch(() => {});
+    }, 20000);
 
-        // Inject auto-fill content script
+    function listener(updatedTabId, changeInfo) {
+      if (updatedTabId === tabId && changeInfo.status === 'complete') {
         chrome.scripting.executeScript({
           target: { tabId },
           files: ['content-scripts/autologin.js']
         }).catch(err => {
-          console.warn('SF Vault+: Could not inject auto-fill script:', err.message);
+          console.debug('SF Vault+: Script injection skipped or tab closed:', err.message);
         });
       }
-    });
+    }
+
+    function removedListener(removedTabId) {
+      if (removedTabId === tabId) {
+        clearTimeout(injectionTimeout);
+        chrome.tabs.onUpdated.removeListener(listener);
+        chrome.tabs.onRemoved.removeListener(removedListener);
+        chrome.storage.session.remove('pendingAutoFill').catch(() => {});
+      }
+    }
+
+    chrome.tabs.onUpdated.addListener(listener);
+    chrome.tabs.onRemoved.addListener(removedListener);
 
     return { success: true };
   } catch (err) {
