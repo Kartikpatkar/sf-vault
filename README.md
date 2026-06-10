@@ -258,20 +258,19 @@ Designed specifically for daily Salesforce usage.
 
 ## 📸 Screenshots
 
-### 🌑 Dark Theme
+### 🔷 Light Mode
 
-* Dashboard
-* Folder Tree
-* Credential View
-* Login Launcher
-* Settings Panel
+![Main Page - Light Theme](/assets/screenshots/Main%20Page%20-%20Light%20Theme.png)
 
-### ☀️ Light Theme
+![Folder Option Screen - Light Theme](/assets/screenshots/Folder%20Option%20Screen%20-%20Light%20Theme.png)
 
-* Dashboard
-* Search Results
-* Import / Export
-* Favorites View
+![New Credential Screen - Light Theme](/assets/screenshots/New%20Credential%20Screen%20-%20Light%20Theme.png)
+
+![Setting Screen - Light Theme](/assets/screenshots/Setting%20Screen%20-%20Light%20Theme.png)
+
+### 🌑 Dark Mode
+
+![Main Screen - Dark Theme](/assets/screenshots/Main%20Screen%20-%20Dark%20Theme.png)
 
 ---
 
@@ -451,39 +450,6 @@ To restore:
 ✅ Chrome Storage Integration
 
 ✅ Manifest V3
-
----
-
-## 🛣️ Roadmap
-
-### Version 1.1
-
-* Recently Used Credentials
-* Folder Credential Counts
-* Bulk Actions
-* Enhanced Search
-
-### Version 1.2
-
-* Smart Views
-* Production View
-* Sandbox View
-* Recent Logins
-
-### Version 1.3
-
-* Omnibox Search
-* Keyboard Shortcuts
-* Quick Launcher
-
-### Version 2.0
-
-* Optional Encryption
-* Master Password
-* WebAuthn Support
-* Biometric Unlock
-
----
 
 ## 🔐 Security & Privacy
 
