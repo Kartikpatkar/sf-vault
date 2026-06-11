@@ -103,7 +103,7 @@ English
 ## Privacy Policy
 
 **Privacy Policy URL** [RECOMMENDED]
-https://github.com/Kartikpatkar/sf-vault/blob/main/PRIVACY_POLICY.md
+https://github.com/Kartikpatkar/sf-vault/blob/main/PRIVACY.md
 
 ---
 
